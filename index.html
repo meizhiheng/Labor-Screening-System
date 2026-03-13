@@ -509,6 +509,13 @@ function renderList() {
     }
 
     const checkbox=isDuplicateMode?`<input type="checkbox" class="duplicate-checkbox" ${selectedDuplicates.has(realIdx)?'checked':''} onclick="toggleDuplicateSelection(${realIdx})">`:'';
+
+    // 修改点1：电话链接改用a标签，只阻止冒泡，不手动跳转
+    const phoneText = (f.phone && f.phone.trim() !== '') ? 
+      `<a href="tel:${f.phone}" class="phone-link" onclick="event.stopPropagation()">${f.phone}</a>` : '-';
+    // 修改点2：地图链接保留a标签，移除手动跳转，只阻止冒泡
+    const locationText = (f.location && f.location.trim() !== '') ? 
+      `<a href="amapuri://poi?sourceApplication=劳务筛选系统&keywords=${encodeURIComponent(f.location.trim())}" class="map-link" onclick="event.stopPropagation()">${f.location}</a>` : '-';
     
     const workText = (f.work && f.work.trim() !== '') ? f.work : 
                     (f.works && f.works.length > 0) ? f.works.join('、') : '-';
@@ -517,10 +524,7 @@ function renderList() {
     const welfareText = (f.welfareText && f.welfareText.trim() !== '') ? f.welfareText : '-';
     const genderText = (f.gender && f.gender.trim() !== '') ? f.gender : '-';
     const contactText = (f.contact && f.contact.trim() !== '') ? f.contact : '-';
-    const phoneText = (f.phone && f.phone.trim() !== '') ? 
-      `<span class="phone-link" onclick="event.stopPropagation();window.location.href='tel:${f.phone}'">${f.phone}</span>` : '-';
-const locationText = (f.location && f.location.trim() !== '') ? 
-  `<a href="amapuri://poi?sourceApplication=劳务筛选系统&keywords=${encodeURIComponent(f.location.trim())}" class="map-link" onclick="event.stopPropagation();window.location.href=this.href;return false;">${f.location}</a>` : '-';
+
     html+=`
     <div class="factory-item" style="background:${bg};${borderStyle}" onclick="${!isDuplicateMode?`openDetailModal(${realIdx})`:''}">
       ${checkbox}
@@ -551,25 +555,25 @@ function openDetailModal(i){
   $("detailTime").innerText = (f.timeText && f.timeText.trim() !== '') ? f.timeText : '-';
   $("detailWelfare").innerText = (f.welfareText && f.welfareText.trim() !== '') ? f.welfareText : '-';
   
-const locEl = $("detailLocation");
-if(f.location && f.location.trim() !== '') {
-  const addr = encodeURIComponent(f.location.trim());
-  locEl.href = `amapuri://search?sourceApplication=appname&keywords=${addr}`;
-  locEl.innerText = f.location;
-  locEl.onclick = function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    window.location.href = this.href;
-  };
-} else {
-  locEl.innerText = '-';
-  locEl.removeAttribute('href');
-  locEl.onclick = null;
-}  
+  const locEl = $("detailLocation");
+  if(f.location && f.location.trim() !== '') {
+    const addr = encodeURIComponent(f.location.trim());
+    locEl.href = `amapuri://search?sourceApplication=appname&keywords=${addr}`;
+    locEl.innerText = f.location;
+    // 修改点3：只阻止冒泡，不手动跳转，让浏览器处理href
+    locEl.onclick = function(e) {
+      e.stopPropagation();
+    };
+  } else {
+    locEl.innerText = '-';
+    locEl.removeAttribute('href');
+    locEl.onclick = null;
+  }  
   $("detailAgeRange").innerText = (f.ageRange && f.ageRange.trim() !== '') ? f.ageRange : '不限';
   $("detailContact").innerText = (f.contact && f.contact.trim() !== '') ? f.contact : '-';
   $("detailPhoneLink").innerText = (f.phone && f.phone.trim() !== '') ? f.phone : '-';
   $("detailPhoneLink").href = (f.phone && f.phone.trim() !== '') ? 'tel:' + f.phone : '#';
+  // 电话链接保持a标签，浏览器默认行为，不需要额外onclick，因为modal-body已阻止冒泡
   $("detailExtra").innerText = (f.extra && f.extra.trim() !== '') ? f.extra : '-';
   $("detailPauseBtn").innerText=f.isPaused?'恢复招聘':'停招';
   $("detailPauseBtn").className=f.isPaused?'detail-action-btn resume-btn':'detail-action-btn pause-btn';
@@ -628,7 +632,7 @@ function exportFactoryToTxt(){
 function openImportModal(){$("importModal").style.display='flex';}
 function closeImportModal(){$("importModal").style.display='none';$("importText").value='';}
 
-// 👇 这里已修复：重复选同一个文件也能导入
+// 修复：重复选同一个文件也能导入
 $("fileInput").addEventListener("change",e=>{
   const file=e.target.files[0]; 
   if(file){ 
